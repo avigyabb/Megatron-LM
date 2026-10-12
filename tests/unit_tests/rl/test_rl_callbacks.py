@@ -21,7 +21,6 @@ def env(monkeypatch):
         wandb_writer=MagicMock(),
         timers=MagicMock(),
         runtime_state=rl_utils.RLRuntimeState(),
-        train_state=SimpleNamespace(iteration=9),
         profiles=[],
     )
     monkeypatch.setattr(
@@ -30,7 +29,6 @@ def env(monkeypatch):
     monkeypatch.setattr(rl_callbacks, "get_tensorboard_writer", lambda: env.writer)
     monkeypatch.setattr(rl_callbacks, "get_wandb_writer", lambda: env.wandb_writer)
     monkeypatch.setattr(rl_callbacks, "get_timers", lambda: env.timers)
-    monkeypatch.setattr(rl_callbacks, "get_train_state", lambda: env.train_state)
     monkeypatch.setattr(rl_callbacks, "log_iteration_profile", lambda **kw: env.profiles.append(kw))
     monkeypatch.setattr(rl_utils, "get_rl_runtime_state", lambda: env.runtime_state)
     monkeypatch.setattr(rl_utils, "log_rl_throughput_metrics", lambda *a: " tokens/s: 10 |")
@@ -46,7 +44,7 @@ def env(monkeypatch):
 def test_logging_callback(env, packing, profile):
     """on_log extends the timers and the log line (packing fragment, throughput fragment) and
     emits the iteration profile when enabled; on_tensorboard_log adds the packing metrics and the
-    GRPO collection index, all at TrainState's iteration."""
+    GRPO collection index, all at the context's iteration."""
     cfg = RLConfig(
         grpo_prompts_per_step=4,
         grpo_group_size=3,
@@ -61,6 +59,7 @@ def test_logging_callback(env, packing, profile):
         model=None,
         timers_to_log=["forward-compute"],
         log_fragments=[],
+        iteration=9,
         batch_size=6,
         elapsed_time_per_iteration=0.5,
         throughput=1.5,

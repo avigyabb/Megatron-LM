@@ -84,6 +84,7 @@ class CallbackContext:
         total_loss_dict: Aggregated eval losses. Available in on_eval_end.
         timers_to_log: Mutable timer-name list; append to include extra timers. In on_log.
         log_fragments: Mutable list; append strings to extend the stdout log line. In on_log.
+        iteration: Training iteration being logged. In on_log and on_tensorboard_log.
         batch_size: Global batch size of that iteration. In on_log and on_tensorboard_log.
         elapsed_time_per_iteration: Seconds per iteration over the log interval. In on_log.
         throughput: TFLOP/s per GPU over the log interval, or None when not logged. In on_log.
@@ -104,6 +105,7 @@ class CallbackContext:
 
     timers_to_log: list[str] | None = None
     log_fragments: list[str] | None = None
+    iteration: int | None = None
     batch_size: int | None = None
     elapsed_time_per_iteration: float | None = None
     throughput: float | None = None

@@ -3811,6 +3811,7 @@ def training_log(
             writer.add_scalar('max_attention_logit', max_attention_logit, iteration)
             if wandb_writer:
                 wandb_writer.log({'max_attention_logit': max_attention_logit}, iteration)
+        callback_manager.callback_context.iteration = iteration
         callback_manager.callback_context.batch_size = batch_size
         callback_manager.trigger("on_tensorboard_log")
     # Log MoE metrics.
@@ -4042,6 +4043,7 @@ def training_log(
         log_fragments: list[str] = []
         callback_manager.callback_context.log_fragments = log_fragments
         callback_manager.callback_context.timers_to_log = timers_to_log
+        callback_manager.callback_context.iteration = iteration
         callback_manager.callback_context.batch_size = batch_size
         callback_manager.callback_context.elapsed_time_per_iteration = elapsed_time_per_iteration
         callback_manager.callback_context.throughput = throughput if cfg.logger.log_throughput else None

@@ -19,7 +19,6 @@ from megatron.training.global_vars import (
     get_args,
     get_tensorboard_writer,
     get_timers,
-    get_train_state,
     get_wandb_writer,
 )
 from megatron.training.utils import print_rank_0
@@ -63,7 +62,7 @@ class RLLoggingCallback(Callback):
     def on_tensorboard_log(self, context: CallbackContext) -> None:
         writer = get_tensorboard_writer()
         wandb_writer = get_wandb_writer()
-        iteration = get_train_state().iteration
+        iteration = context.iteration
         if self._rl_config.rl_use_sequence_packing:
             metrics = get_sequence_packing_tensorboard_metrics(
                 rl_utils.get_rl_runtime_state().consumed_train_bins, self._micro_batch_size
@@ -79,7 +78,7 @@ class RLLoggingCallback(Callback):
 
     def on_log(self, context: CallbackContext) -> None:
         wandb_writer = get_wandb_writer()
-        iteration = get_train_state().iteration
+        iteration = context.iteration
         context.timers_to_log.extend(RL_LOGGABLE_TIMER_NAMES)
         if self._rl_config.rl_use_sequence_packing:
             context.log_fragments.append(
