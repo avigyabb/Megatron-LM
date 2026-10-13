@@ -15,7 +15,6 @@ from megatron.core.num_microbatches_calculator import (
     init_num_microbatches_calculator,
     update_num_microbatches,
 )
-from megatron.training.global_vars import get_train_state
 from megatron.training.utils import print_rank_0
 
 if HAVE_TORCH_MEMORY_SAVER:
@@ -180,7 +179,7 @@ def load_reference_state_dict(model: list, checkpointing_context: dict, args: An
         and getattr(args, "use_torch_fsdp2", False)
         and args.ckpt_format == "torch_dist",
     )
-    update_num_microbatches(consumed_samples=get_train_state().consumed_train_samples, verbose=True)
+    update_num_microbatches(consumed_samples=args.consumed_train_samples, verbose=True)
 
     args.no_load_optim = no_load_optim
     return ref_state_dict
