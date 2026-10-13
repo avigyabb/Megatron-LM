@@ -2095,8 +2095,9 @@ def pretrain(
     # fallback.
 
     # Enter the loop when training, or when the caller opted into running it.
+    train_state = get_train_state()
     if not cfg_container.validation.skip_train or (
-        run_train_loop_without_updates and args.do_train
+        run_train_loop_without_updates and train_state.do_train
     ):
         if cfg_container.validation.skip_train:
             print_rank_0(
@@ -5892,39 +5893,35 @@ def build_train_valid_test_data_loaders(build_train_valid_test_datasets_provider
 def backfill_consumed_samples_from_iteration():
     """Backward compatibility for checkpoints without consumed-sample counts (fixed batch size)."""
     args = get_args()
-    if args.iteration > 0 and args.consumed_train_samples == 0:
+    train_state = get_train_state()
+    if train_state.iteration > 0 and train_state.consumed_train_samples == 0:
         assert (
             args.train_samples is None
         ), 'Only backward compatiblity support for iteration-based training'
 
-        args.consumed_train_samples = args.iteration * args.global_batch_size
-    if args.iteration > 0 and args.consumed_valid_samples == 0:
+        train_state.consumed_train_samples = train_state.iteration * args.global_batch_size
+    if train_state.iteration > 0 and train_state.consumed_valid_samples == 0:
         if args.train_samples is None:
             effective_start = args.start_eval_at_iter if args.start_eval_at_iter is not None else 0
             skipped_intervals = effective_start // args.eval_interval
-            args.consumed_valid_samples = (
-                max(0, args.iteration // args.eval_interval - skipped_intervals)
+            train_state.consumed_valid_samples = (
+                max(0, train_state.iteration // args.eval_interval - skipped_intervals)
                 * args.eval_iters
                 * getattr(args, 'eval_global_batch_size', args.global_batch_size)
             )
 
 
 def broadcast_data_flags(do_train, do_valid, do_test):
-    """Broadcast rank 0's train/valid/test availability flags into ``args.do_*`` and the TrainState."""
-    args = get_args()
+    """Broadcast rank 0's train/valid/test availability flags into the TrainState."""
     flags = torch.tensor(
         [int(do_train), int(do_valid), int(do_test)], dtype=torch.long, device='cuda'
     )
     torch.distributed.broadcast(flags, 0)
 
-    args.do_train = getattr(args, "do_train", False) or flags[0].item()
-    args.do_valid = getattr(args, "do_valid", False) or flags[1].item()
-    args.do_test = getattr(args, "do_test", False) or flags[2].item()
-
     train_state = get_train_state()
-    train_state.do_train = args.do_train
-    train_state.do_valid = args.do_valid
-    train_state.do_test = args.do_test
+    train_state.do_train = train_state.do_train or flags[0].item()
+    train_state.do_valid = train_state.do_valid or flags[1].item()
+    train_state.do_test = train_state.do_test or flags[2].item()
 
 
 def build_train_valid_test_data_iterators(build_train_valid_test_datasets_provider):
